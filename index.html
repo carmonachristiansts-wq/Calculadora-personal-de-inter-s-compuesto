@@ -103,7 +103,7 @@
       <label for="eventos">Número de eventos</label>
       <input id="eventos" type="number" inputmode="numeric" min="0" step="1" value="10">
       
-      <button onclick="calcularCrecimiento()">Calcular crecimiento</button>
+      <button id="btnCrecimiento">Calcular crecimiento</button>
       <div id="resultadoCrecimiento" class="result" style="display:none"></div>
     </div>
 
@@ -111,7 +111,7 @@
       <h2>¿Cuántos eventos necesito para llegar a una meta?</h2>
       <label for="meta">Meta ($)</label>
       <input id="meta" type="text" inputmode="decimal" value="200">
-      <button class="secondary" onclick="calcularMeta()">Calcular eventos necesarios</button>
+      <button id="btnMeta" class="secondary">Calcular eventos necesarios</button>
       <div id="resultadoMeta" class="result" style="display:none"></div>
     </div>
 
@@ -135,128 +135,137 @@
   </div>
 
   <script>
-    const dinero = new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    });
+    document.addEventListener('DOMContentLoaded', () => {
+      const dinero = new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD'
+      });
 
-    function numero(id) {
-      const texto = document.getElementById(id).value.trim().replace(',', '.');
-      return Number(texto);
-    }
-
-    function mostrarError(id, mensaje) {
-      const caja = document.getElementById(id);
-      caja.style.display = 'block';
-      caja.className = 'result error';
-      caja.innerHTML = mensaje;
-    }
-
-    function calcularCrecimiento() {
-      const capital = numero('capital');
-      const tasaPct = numero('tasa');
-      const eventos = Number(document.getElementById('eventos').value);
-
-      if (!(capital > 0) || !(tasaPct > -100) || !Number.isInteger(eventos) || eventos < 0) {
-        mostrarError('resultadoCrecimiento', 
-          'Revisa los datos. El capital debe ser mayor que 0 y los eventos deben ser un número entero igual o mayor que 0.'
-        );
-        return;
+      function numero(id) {
+        const input = document.getElementById(id);
+        if (!input) return 0;
+        const texto = input.value.trim().replace(',', '.');
+        return Number(texto);
       }
 
-      const tasa = tasaPct / 100;
-      const final = capital * Math.pow(1 + tasa, eventos);
-      const gananciaTotal = final - capital;
+      function mostrarError(id, mensaje) {
+        const caja = document.getElementById(id);
+        caja.style.display = 'block';
+        caja.className = 'result error';
+        caja.innerHTML = mensaje;
+      }
 
-      const caja = document.getElementById('resultadoCrecimiento');
-      caja.style.display = 'block';
-      caja.className = 'result';
-      caja.innerHTML = `
-        <div>Capital futuro</div>
-        <div class="big">${dinero.format(final)}</div>
-        <div>Ganancia acumulada: <b>${dinero.format(gananciaTotal)}</b></div>
-        <div>Factor aplicado: <b>${(1 + tasa).toFixed(4)}</b> por evento</div>
-      `;
+      function calcularCrecimiento() {
+        const capital = numero('capital');
+        const tasaPct = numero('tasa');
+        const eventos = Number(document.getElementById('eventos').value);
 
-      const tbody = document.querySelector('#tabla tbody');
-      tbody.innerHTML = '';
-      
-      let actual = capital;
-      for (let i = 0; i <= eventos; i++) {
-        const fila = document.createElement('tr');
-        if (i === 0) {
-          fila.innerHTML = `<td>0</td><td>${dinero.format(capital)}</td><td>${dinero.format(0)}</td><td>${dinero.format(capital)}</td>`;
-        } else {
-          const inicio = actual;
-          const ganancia = inicio * tasa;
-          const cierre = inicio + ganancia;
-          actual = cierre;
-          fila.innerHTML = `<td>${i}</td><td>${dinero.format(inicio)}</td><td>${dinero.format(ganancia)}</td><td>${dinero.format(cierre)}</td>`;
+        if (!(capital > 0) || !(tasaPct > -100) || !Number.isInteger(eventos) || eventos < 0) {
+          mostrarError('resultadoCrecimiento', 
+            'Revisa los datos. El capital debe ser mayor que 0 y los eventos deben ser un número entero igual o mayor que 0.'
+          );
+          return;
         }
-        tbody.appendChild(fila);
+
+        const tasa = tasaPct / 100;
+        const final = capital * Math.pow(1 + tasa, eventos);
+        const gananciaTotal = final - capital;
+
+        const caja = document.getElementById('resultadoCrecimiento');
+        caja.style.display = 'block';
+        caja.className = 'result';
+        caja.innerHTML = `
+          <div>Capital futuro</div>
+          <div class="big">${dinero.format(final)}</div>
+          <div>Ganancia acumulada: <b>${dinero.format(gananciaTotal)}</b></div>
+          <div>Factor aplicado: <b>${(1 + tasa).toFixed(4)}</b> por evento</div>
+        `;
+
+        const tbody = document.querySelector('#tabla tbody');
+        tbody.innerHTML = '';
+        
+        let actual = capital;
+        for (let i = 0; i <= eventos; i++) {
+          const fila = document.createElement('tr');
+          if (i === 0) {
+            fila.innerHTML = `<td>0</td><td>${dinero.format(capital)}</td><td>${dinero.format(0)}</td><td>${dinero.format(capital)}</td>`;
+          } else {
+            const inicio = actual;
+            const ganancia = inicio * tasa;
+            const cierre = inicio + ganancia;
+            actual = cierre;
+            fila.innerHTML = `<td>${i}</td><td>${dinero.format(inicio)}</td><td>${dinero.format(ganancia)}</td><td>${dinero.format(cierre)}</td>`;
+          }
+          tbody.appendChild(fila);
+        }
+
+        guardar();
       }
 
-      guardar();
-    }
+      function calcularMeta() {
+        const capital = numero('capital');
+        const tasaPct = numero('tasa');
+        const meta = numero('meta');
 
-    function calcularMeta() {
-      const capital = numero('capital');
-      const tasaPct = numero('tasa');
-      const meta = numero('meta');
+        if (!(capital > 0) || !(meta > 0) || !(tasaPct > 0)) {
+          mostrarError('resultadoMeta', 'Para calcular una meta, el capital, la meta y la tasa deben ser mayores que 0.');
+          return;
+        }
 
-      if (!(capital > 0) || !(meta > 0) || !(tasaPct > 0)) {
-        mostrarError('resultadoMeta', 'Para calcular una meta, el capital, la meta y la tasa deben ser mayores que 0.');
-        return;
-      }
+        if (meta <= capital) {
+          const caja = document.getElementById('resultadoMeta');
+          caja.style.display = 'block';
+          caja.className = 'result';
+          caja.innerHTML = 'Ya alcanzaste esa meta con tu capital inicial. Eventos necesarios: <b>0</b>.';
+          return;
+        }
 
-      if (meta <= capital) {
+        const tasa = tasaPct / 100;
+        const eventos = Math.ceil(Math.log(meta / capital) / Math.log(1 + tasa));
+        const final = capital * Math.pow(1 + tasa, eventos);
+
         const caja = document.getElementById('resultadoMeta');
         caja.style.display = 'block';
         caja.className = 'result';
-        caja.innerHTML = 'Ya alcanzaste esa meta con tu capital inicial. Eventos necesarios: <b>0</b>.';
-        return;
+        caja.innerHTML = `
+          <div>Eventos necesarios</div>
+          <div class="big">${eventos}</div>
+          <div>Capital aproximado al completar esos eventos: <b>${dinero.format(final)}</b></div>
+        `;
+
+        guardar();
       }
 
-      const tasa = tasaPct / 100;
-      const eventos = Math.ceil(Math.log(meta / capital) / Math.log(1 + tasa));
-      const final = capital * Math.pow(1 + tasa, eventos);
+      function guardar() {
+        const datos = {
+          capital: document.getElementById('capital').value,
+          tasa: document.getElementById('tasa').value,
+          eventos: document.getElementById('eventos').value,
+          meta: document.getElementById('meta').value
+        };
+        localStorage.setItem('calculadoraInteres', JSON.stringify(datos));
+      }
 
-      const caja = document.getElementById('resultadoMeta');
-      caja.style.display = 'block';
-      caja.className = 'result';
-      caja.innerHTML = `
-        <div>Eventos necesarios</div>
-        <div class="big">${eventos}</div>
-        <div>Capital aproximado al completar esos eventos: <b>${dinero.format(final)}</b></div>
-      `;
+      function cargar() {
+        const guardado = localStorage.getItem('calculadoraInteres');
+        if (!guardado) return;
+        try {
+          const d = JSON.parse(guardado);
+          if (d.capital) document.getElementById('capital').value = d.capital;
+          if (d.tasa) document.getElementById('tasa').value = d.tasa;
+          if (d.eventos) document.getElementById('eventos').value = d.eventos;
+          if (d.meta) document.getElementById('meta').value = d.meta;
+        } catch (e) {}
+      }
 
-      guardar();
-    }
+      // Asignación explícita de eventos
+      document.getElementById('btnCrecimiento').addEventListener('click', calcularCrecimiento);
+      document.getElementById('btnMeta').addEventListener('click', calcularMeta);
 
-    function guardar() {
-      const datos = {
-        capital: document.getElementById('capital').value,
-        tasa: document.getElementById('tasa').value,
-        eventos: document.getElementById('eventos').value,
-        meta: document.getElementById('meta').value
-      };
-      localStorage.setItem('calculadoraInteres', JSON.stringify(datos));
-    }
-
-    function cargar() {
-      const guardado = localStorage.getItem('calculadoraInteres');
-      if (!guardado) return;
-      try {
-        const d = JSON.parse(guardado);
-        if (d.capital) document.getElementById('capital').value = d.capital;
-        if (d.tasa) document.getElementById('tasa').value = d.tasa;
-        if (d.eventos) document.getElementById('eventos').value = d.eventos;
-        if (d.meta) document.getElementById('meta').value = d.meta;
-      } catch (e) {}
-    }
-
-    cargar();
-    calcularCrecimiento();
+      // Carga e inicialización
+      cargar();
+      calcularCrecimiento();
+    });
   </script>
 </body>
 </html>
